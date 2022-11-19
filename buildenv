@@ -1,0 +1,52 @@
+#!/bin/bash
+
+IFS=
+THISDIR=`readlink -f ${BASH_SOURCE%/*}`
+BASEDIR=`readlink -f ${BASH_SOURCE%/*}/..`
+
+HOMEDIR=/tmp/home
+
+SUDO=
+FORCE_REBUILD=0
+
+# If the user is not in the docker group, run docker via sudo
+groups | grep -q 'docker'
+if [ $? -ne 0 ]; then
+    SUDO=sudo
+fi
+
+if [ "$1" = "--rebuild" ]; then
+    FORCE_REBUILD=1
+fi
+
+# Make the docker session more obvious by showing the hostname as black on green
+PROMPT='\$\{debian_chroot:+\(\$debian_chroot\)\}\\\u@\\\[\\\\e\[30\;42m\\\]\\\h\\\[\\\\e\[m\\\]:\\\w\\\$ '
+CMD="mkdir -p $HOMEDIR && \
+    echo PS1=\'$PROMPT\' > $HOMEDIR/.bashrc && \
+    echo HISTCONTROL=ignoreboth >> $HOMEDIR/.bashrc && \
+    mkdir -p build && \
+    cd build && \
+    /bin/bash"
+
+IMAGE_NAME=pico_buildenv
+IMAGE_TAG=1.4.0
+IMAGE_FULL_NAME=${IMAGE_NAME}:${IMAGE_TAG}
+FOUND_IMAGE=`docker image inspect ${IMAGE_FULL_NAME} --format "found" 2> /dev/null`
+
+if [ "${FOUND_IMAGE}" = "" ] || [ ${FORCE_REBUILD} -eq 1 ]; then
+    echo Building docker image.  Please wait this may take a few minutes...
+    ${SUDO} docker build -t ${IMAGE_FULL_NAME} --build-arg SDKVERSION=${IMAGE_TAG} ${THISDIR}
+fi
+
+${SUDO} docker run -ti \
+           --group-add $(id -g) \
+           --user $(id -u):$(id -g) \
+           --hostname ${IMAGE_NAME} \
+           --env HOME=${HOMEDIR} --rm \
+           --volume ${BASEDIR}:${BASEDIR} \
+           --volume="/etc/group:/etc/group:ro" \
+           --volume="/etc/passwd:/etc/passwd:ro" \
+           --volume="/etc/shadow:/etc/shadow:ro" \
+           --workdir ${BASEDIR} \
+           ${IMAGE_FULL_NAME} \
+           sh -c "$CMD"
