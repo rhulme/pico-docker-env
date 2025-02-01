@@ -31,7 +31,7 @@ CMD="mkdir -p $HOMEDIR && \
 IMAGE_NAME=pico_buildenv
 IMAGE_TAG=2.1.0
 IMAGE_FULL_NAME=${IMAGE_NAME}:${IMAGE_TAG}
-FOUND_IMAGE=`docker image inspect ${IMAGE_FULL_NAME} --format "found" 2> /dev/null`
+FOUND_IMAGE=`${SUDO} docker image inspect ${IMAGE_FULL_NAME} --format "found" 2> /dev/null`
 
 if [ "${FOUND_IMAGE}" = "" ] || [ ${FORCE_REBUILD} -eq 1 ]; then
     echo Building docker image.  Please wait this may take a few minutes...
