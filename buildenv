@@ -29,7 +29,7 @@ CMD="mkdir -p $HOMEDIR && \
     /bin/bash"
 
 IMAGE_NAME=pico_buildenv
-IMAGE_TAG=1.5.0
+IMAGE_TAG=2.1.0
 IMAGE_FULL_NAME=${IMAGE_NAME}:${IMAGE_TAG}
 FOUND_IMAGE=`docker image inspect ${IMAGE_FULL_NAME} --format "found" 2> /dev/null`
 
